@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding App by CL</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700&family=Moul&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Excel & PDF Export Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        body { font-family: 'Battambang', sans-serif; background-color: #fdf2f8; overflow: hidden; }
+        .moul-font { font-family: 'Moul', cursive; }
+        .active-menu { background-color: #fce7f3; color: #e11d48; border-left: 4px solid #e11d48; font-weight: bold; }
+        
+        @media print {
+            .no-print { display: none !important; }
+            .print-break { page-break-before: always; }
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Auth Section -->
+    <div id="auth-section" class="min-h-screen flex items-center justify-center bg-rose-50">
+        <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md border-t-4 border-rose-500">
+            <h2 class="text-2xl text-rose-600 mb-2 moul-font text-center">Wedding App</h2>
+            <p class="text-sm text-gray-500 mb-6 text-center">Powered by CLDEPOT</p>
+            <form id="auth-form" class="space-y-4">
+                <input type="email" id="email" placeholder="អ៊ីមែល" class="w-full p-2 border rounded focus:ring-2 focus:ring-rose-300" required>
+                <input type="password" id="password" placeholder="ពាក្យសម្ងាត់" class="w-full p-2 border rounded focus:ring-2 focus:ring-rose-300" required>
+                <button type="button" onclick="handleAuth('login')" class="w-full bg-rose-500 text-white font-bold py-2 rounded hover:bg-rose-600">ចូលគណនី</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App Section -->
+    <div id="app-section" class="hidden min-h-screen flex flex-col md:flex-row">
+        <!-- Sidebar -->
+        <aside class="w-full md:w-64 bg-white shadow-[2px_0_10px_rgba(0,0,0,0.05)] flex flex-col justify-between no-print h-screen sticky top-0 overflow-y-auto z-20">
+            <div>
+                <div class="p-6 text-center border-b border-rose-100 relative">
+                    <div class="text-3xl mb-2 text-rose-500">💍✨</div>
+                    <h2 class="text-2xl text-rose-600 moul-font drop-shadow-sm">មង្គលសិរី</h2>
+                    <div class="my-3 py-2 border-y border-rose-200 bg-rose-50 rounded-lg shadow-inner">
+                        <p class="text-xs text-gray-500 mb-1">អាពាហ៍ពិពាហ៍រវាង</p>
+                        <p id="sidebar-couple-names" class="text-sm text-rose-700 font-bold moul-font leading-relaxed">... និង ...</p>
+                    </div>
+                    <p id="current-user-display" class="text-xs text-gray-500 mt-2 font-bold"></p>
+                    <p id="current-role-display" class="text-xs text-blue-500"></p>
+                </div>
+                <nav class="p-4 space-y-2">
+                    <button id="menu-info" onclick="showPage('info', this)" class="menu-btn w-full text-left p-2 rounded text-gray-700 hover:bg-gray-50 transition active-menu">💍 ព័ត៌មានទូទៅ</button>
+                    <button id="menu-guests" onclick="showPage('guests', this)" class="menu-btn w-full text-left p-2 rounded text-gray-700 hover:bg-gray-50 transition">📝 បញ្ជីឈ្មោះភ្ញៀវ</button>
+                    <button id="menu-donations" onclick="showPage('donations', this)" class="menu-btn w-full text-left p-2 rounded text-gray-700 hover:bg-gray-50 transition">🎁 បញ្ជីចំណងដៃ</button>
+                    <button id="menu-expenses" onclick="showPage('expenses', this)" class="menu-btn w-full text-left p-2 rounded text-gray-700 hover:bg-gray-50 transition">💸 បញ្ជីចំណាយ</button>
+                    <button id="menu-reports" onclick="showPage('reports', this)" class="menu-btn w-full text-left p-2 rounded text-gray-700 hover:bg-gray-50 transition">📊 របាយការណ៍</button>
+                    <button id="menu-users" onclick="showPage('users', this)" class="menu-btn w-full text-left p-2 rounded text-gray-700 hover:bg-gray-50 transition">👥 គ្រប់គ្រងគណនី</button>
+                </nav>
+            </div>
+            <div class="p-4 border-t border-rose-100 text-center bg-white">
+                <button onclick="logout()" class="text-sm text-red-500 font-bold hover:underline mb-2">ចាកចេញ (Logout)</button>
+                <p class="text-xs font-bold text-gray-400">Powered by CLDEPOT</p>
+            </div>
+        </aside>
+
+        <!-- Right Side: Content Area + Footer Container -->
+        <div class="flex-1 flex flex-col h-screen overflow-hidden w-full relative bg-transparent">
+            <!-- Scrollable Content -->
+            <main class="flex-1 p-6 overflow-y-auto w-full pb-10">
+                
+                <!-- Page: General Info -->
+                <div id="page-info" class="page-content block">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl moul-font text-rose-600">ព័ត៌មានទូទៅនៃអាពាហ៍ពិពាហ៍</h2>
+                        <div class="flex gap-2">
+                            <button onclick="backupData()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm shadow">💾 Backup</button>
+                            <input type="file" id="restore-file" accept=".json" class="hidden" onchange="restoreData(event)">
+                            <button onclick="document.getElementById('restore-file').click()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm shadow">📂 Restore</button>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded shadow max-w-3xl grid grid-cols-2 gap-4">
+                        <div><label class="block text-sm text-gray-600">ឈ្មោះកូនកំលោះ</label><input type="text" id="info-groom" class="w-full border p-2 rounded focus:ring-1 focus:ring-rose-300"></div>
+                        <div><label class="block text-sm text-gray-600">ឈ្មោះកូនក្រមុំ</label><input type="text" id="info-bride" class="w-full border p-2 rounded focus:ring-1 focus:ring-rose-300"></div>
+                        <div><label class="block text-sm text-gray-600">កាលបរិច្ឆេទ</label><input type="date" id="info-date" class="w-full border p-2 rounded focus:ring-1 focus:ring-rose-300"></div>
+                        <div><label class="block text-sm text-gray-600">ទីតាំងរៀបចំ</label><input type="text" id="info-location" class="w-full border p-2 rounded focus:ring-1 focus:ring-rose-300"></div>
+                        <button onclick="saveGeneralInfo()" class="col-span-2 bg-rose-500 text-white py-2 rounded mt-4 hover:bg-rose-600 transition shadow">រក្សាទុកទិន្នន័យ</button>
+                    </div>
+                </div>
+
+                <!-- Page: Guest List -->
+                <div id="page-guests" class="page-content hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl moul-font text-rose-600">បញ្ជីឈ្មោះភ្ញៀវ <span id="total-guest-count" class="text-lg text-gray-500 font-sans"></span></h2>
+                        <div class="flex gap-2">
+                            <input type="text" onkeyup="searchTable('guest-tbody', this.value)" placeholder="ស្វែងរក..." class="border p-2 rounded shadow-sm focus:ring-1 focus:ring-rose-300">
+                            <button onclick="downloadGuestTemplate()" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded shadow-sm">📄 ទាញយកគំរូ Excel</button>
+                            <input type="file" id="import-excel" accept=".xlsx, .xls" class="hidden" onchange="importGuestsFromExcel(event)">
+                            <button onclick="document.getElementById('import-excel').click()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-sm">📥 ទាញចូលពី Excel</button>
+                            <button onclick="exportGuestsToExcel()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow-sm">📤 ទាញទៅExcel</button>
+                            <button onclick="openModal('guest-modal')" class="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded shadow-sm">+ បន្ថែមភ្ញៀវ</button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded shadow overflow-x-auto">
+                        <table class="w-full text-left text-sm" id="table-guest">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="p-2 border">ល.រ</th><th class="p-2 border">លេខកូដ</th><th class="p-2 border">ឈ្មោះភ្ញៀវ</th>
+                                    <th class="p-2 border">ភេទ</th><th class="p-2 border">ទូរស័ព្ទ ១</th><th class="p-2 border">ខាងណា?</th>
+                                    <th class="p-2 border text-center">ចំនួនចូលរួម</th><th class="p-2 border">ចំណងដៃ(៛)</th>
+                                    <th class="p-2 border">ចំណងដៃ($)</th><th class="p-2 border">ផ្សេងៗ</th>
+                                    <th class="p-2 border text-center">សកម្មភាព</th>
+                                </tr>
+                            </thead>
+                            <tbody id="guest-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Page: Donations List -->
+                <div id="page-donations" class="page-content hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl moul-font text-rose-600">បញ្ជីចំណងដៃ</h2>
+                        <div class="flex gap-2">
+                            <input type="text" onkeyup="searchTable('donation-tbody', this.value)" placeholder="ស្វែងរក..." class="border p-2 rounded shadow-sm focus:ring-1 focus:ring-rose-300">
+                            <button onclick="openModal('donation-modal')" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded shadow-sm">+ កត់ចំណងដៃ</button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded shadow overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="p-2 border">ល.រ</th><th class="p-2 border">កាលបរិច្ឆេទ</th><th class="p-2 border">លេខកូដ</th>
+                                    <th class="p-2 border">ឈ្មោះភ្ញៀវ</th><th class="p-2 border">ខាងណា?</th><th class="p-2 border">ចំណងដៃ(៛)</th>
+                                    <th class="p-2 border">ចំណងដៃ($)</th><th class="p-2 border">ផ្សេងៗ</th>
+                                    <th class="p-2 border text-center">សកម្មភាព</th>
+                                </tr>
+                            </thead>
+                            <tbody id="donation-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Page: Expenses List -->
+                <div id="page-expenses" class="page-content hidden">
+                     <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl moul-font text-rose-600">បញ្ជីចំណាយ</h2>
+                        <div class="flex gap-2">
+                            <input type="text" onkeyup="searchTable('expense-tbody', this.value)" placeholder="ស្វែងរក..." class="border p-2 rounded shadow-sm focus:ring-1 focus:ring-rose-300">
+                            <button onclick="openModal('expense-modal')" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded shadow-sm">+ កត់ចំណាយ</button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded shadow overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="p-2 border">ល.រ</th><th class="p-2 border">កាលបរិច្ឆេទ</th><th class="p-2 border">អ្នកផ្គត់ផ្គង់</th>
+                                    <th class="p-2 border">បរិយាយ</th><th class="p-2 border">ចំណាយ(៛)</th><th class="p-2 border">ចំណាយ($)</th>
+                                    <th class="p-2 border text-center">សកម្មភាព</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expense-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Page: Reports -->
+                <div id="page-reports" class="page-content hidden">
+                    <div class="flex justify-between items-center mb-6 no-print">
+                        <h2 class="text-2xl moul-font text-rose-600">របាយការណ៍</h2>
+                        <div class="flex gap-2">
+                            <select id="report-type" onchange="loadReports()" class="border p-2 rounded shadow-sm">
+                                <option value="all">របាយការណ៍សរុប (ចំណូល+ចំណាយ)</option>
+                                <option value="income">របាយការណ៍ចំណូល (ចំណងដៃ)</option>
+                                <option value="expense">របាយការណ៍ចំណាយ</option>
+                                <option value="guest">របាយការណ៍ភ្ញៀវចូលរួម</option>
+                            </select>
+                            <button onclick="exportReportToExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-sm">ទាញយក Excel</button>
+                            <button onclick="window.print()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded shadow-sm">Print / PDF</button>
+                        </div>
+                    </div>
+
+                    <div id="report-container" class="bg-white p-6 rounded shadow">
+                        <div id="report-view-all">
+                            <div class="text-center mb-6 border-b pb-4">
+                                <h2 class="text-2xl font-bold moul-font">របាយការណ៍ចំណូល ចំណាយ និងចំណេញ</h2>
+                                <p class="text-gray-600 mt-2" id="report-header-names"></p>
+                            </div>
+                            <div class="grid grid-cols-5 gap-4 mb-8 text-center">
+                                <div class="p-4 bg-blue-50 rounded border border-blue-200">
+                                    <p class="text-sm text-gray-600">ភ្ញៀវចូលរួមសរុប</p>
+                                    <h3 class="text-xl font-bold text-blue-600" id="rpt-total-pax">0 នាក់</h3>
+                                </div>
+                                <div class="p-4 bg-green-50 rounded border border-green-200">
+                                    <p class="text-sm text-gray-600">ចំណូលសរុប</p>
+                                    <h3 class="text-md font-bold text-green-700" id="rpt-total-in-riel">0 ៛</h3>
+                                    <h3 class="text-md font-bold text-green-700" id="rpt-total-in-usd">$ 0</h3>
+                                </div>
+                                <div class="p-4 bg-orange-50 rounded border border-orange-200">
+                                    <p class="text-sm text-gray-600">ចំណាយសរុប</p>
+                                    <h3 class="text-md font-bold text-orange-700" id="rpt-total-ex-riel">0 ៛</h3>
+                                    <h3 class="text-md font-bold text-orange-700" id="rpt-total-ex-usd">$ 0</h3>
+                                </div>
+                                <div class="p-4 bg-rose-50 rounded border border-rose-200">
+                                    <p class="text-sm text-gray-600">ចំណេញ / ខាត</p>
+                                    <h3 class="text-md font-bold text-rose-700" id="rpt-net-riel">0 ៛</h3>
+                                    <h3 class="text-md font-bold text-rose-700" id="rpt-net-usd">$ 0</h3>
+                                </div>
+                                <div class="p-4 bg-purple-50 rounded border border-purple-200 overflow-hidden">
+                                    <p class="text-sm text-gray-600">ផ្សេងៗ (សម្ភារៈ)</p>
+                                    <p class="text-xs font-bold text-purple-700 mt-1 truncate" id="rpt-total-other">-</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="report-view-income" class="hidden">
+                            <div class="text-center mb-6 border-b pb-4 print-break">
+                                <h2 class="text-2xl font-bold moul-font">របាយការណ៍ចំណូល (ចំណងដៃ)</h2>
+                            </div>
+                            <table class="w-full text-left text-sm mb-6 border" id="table-report-income">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="p-2 border">កាលបរិច្ឆេទ</th><th class="p-2 border">លេខកូដ</th>
+                                        <th class="p-2 border">ឈ្មោះភ្ញៀវ</th><th class="p-2 border">ទឹកប្រាក់ (៛)</th>
+                                        <th class="p-2 border">ទឹកប្រាក់ ($)</th>
+                                        <th class="p-2 border text-purple-700">ផ្សេងៗ (សម្ភារៈ)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rpt-income-tbody"></tbody>
+                            </table>
+                        </div>
+
+                        <div id="report-view-expense" class="hidden">
+                            <div class="text-center mb-6 border-b pb-4 print-break">
+                                <h2 class="text-2xl font-bold moul-font">របាយការណ៍ចំណាយ</h2>
+                            </div>
+                            <table class="w-full text-left text-sm border" id="table-report-expense">
+                                <thead class="bg-gray-100"><tr><th class="p-2 border">កាលបរិច្ឆេទ</th><th class="p-2 border">អ្នកផ្គត់ផ្គង់</th><th class="p-2 border">បរិយាយ</th><th class="p-2 border">ទឹកប្រាក់ (៛)</th><th class="p-2 border">ទឹកប្រាក់ ($)</th></tr></thead>
+                                <tbody id="rpt-expense-tbody"></tbody>
+                            </table>
+                        </div>
+
+                        <div id="report-view-guest" class="hidden">
+                            <div class="text-center mb-6 border-b pb-4 print-break">
+                                <h2 class="text-2xl font-bold moul-font">របាយការណ៍ភ្ញៀវចូលរួម</h2>
+                            </div>
+                            <table class="w-full text-left text-sm border" id="table-report-guest">
+                                <thead class="bg-gray-100"><tr><th class="p-2 border">លេខកូដ</th><th class="p-2 border">ឈ្មោះភ្ញៀវ</th><th class="p-2 border">ខាងណា?</th><th class="p-2 border text-center">ចំនួនចូលរួម (នាក់)</th></tr></thead>
+                                <tbody id="rpt-guest-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Page: Users Management -->
+                <div id="page-users" class="page-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl moul-font text-rose-600">គ្រប់គ្រងគណនីប្រើប្រាស់</h2>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded shadow col-span-1 h-fit">
+                            <h3 class="text-lg font-bold mb-4 border-b pb-2">បង្កើត/កែប្រែ គណនី (អតិបរមា ៥)</h3>
+                            <div class="space-y-4">
+                                <div><label class="block text-sm text-gray-600">អ៊ីមែល (Email)</label><input type="email" id="u-email" class="w-full border p-2 rounded focus:ring-1 focus:ring-rose-300"></div>
+                                <div><label class="block text-sm text-gray-600">ពាក្យសម្ងាត់ (Password - យ៉ាងតិច ៦ខ្ទង់)</label><input type="password" id="u-pass" class="w-full border p-2 rounded focus:ring-1 focus:ring-rose-300" placeholder="ពាក្យសម្ងាត់ (យ៉ាងតិច ៦ខ្ទង់)"></div>
+                                <div>
+                                    <label class="block text-sm text-gray-600">តួនាទី (Role)</label>
+                                    <select id="u-role" class="w-full border p-2 rounded focus:ring-1 focus:ring-rose-300">
+                                        <option value="staff">បុគ្គលិក (Staff) - មើលបានតែភ្ញៀវ និងចំណងដៃ</option>
+                                        <option value="admin">អ្នកគ្រប់គ្រង (Admin) - មានសិទ្ធិពេញ</option>
+                                    </select>
+                                </div>
+                                <button id="btn-create-user" onclick="saveAccount()" class="w-full bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 shadow-sm">បង្កើតគណនីថ្មី</button>
+                                <button id="btn-cancel-edit-user" onclick="cancelEditUser()" class="hidden w-full mt-2 bg-gray-400 text-white font-bold py-2 rounded hover:bg-gray-500 shadow-sm">បោះបង់ការកែប្រែ</button>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded shadow col-span-2">
+                            <h3 class="text-lg font-bold mb-4 border-b pb-2">បញ្ជីគណនីសរុប <span id="users-count" class="text-blue-600"></span></h3>
+                            <table class="w-full text-left text-sm border">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="p-2 border">ល.រ</th>
+                                        <th class="p-2 border">អ៊ីមែល (Email)</th>
+                                        <th class="p-2 border">តួនាទី (Role)</th>
+                                        <th class="p-2 border text-center">សកម្មភាព</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+
+            <!-- Footer Section សម្រាប់ថ្លែងអំណរគុណ និងសារចំណាំ -->
+            <footer class="bg-white border-t border-rose-100 p-4 text-center no-print z-10 shadow-[0_-2px_15px_rgba(0,0,0,0.03)] shrink-0">
+                <p class="text-sm md:text-base moul-font text-rose-500 tracking-wide drop-shadow-[0_1px_1px_rgba(0,0,0,0.05)]">
+                    🙏 សូមអរគុណដែលបានជ្រើសរើស <a href="https://www.facebook.com/CHHEANGLENGDEPOT" target="_blank" class="text-rose-700 px-1 font-bold hover:text-rose-800 hover:underline transition-colors duration-300">ដេប៉ូភេសជ្ជៈ ឈាង ឡេង</a> សម្រាប់ពិធីអាពាហ៍ពិពាហ៍របស់លោកអ្នក។ ✨
+                </p>
+                <!-- សារចំណាំ -->
+                <p class="text-xs text-gray-600 mt-2 font-sans max-w-2xl mx-auto leading-relaxed">
+                    <span class="text-red-500 font-bold">ចំណាំ៖</span> ទិន្នន័យទាំងអស់នឹងត្រូវលុបចេញពីប្រព័ន្ធដោយស្វ័យប្រវត្តិក្រោយកាលបរិច្ឆេទរៀបអាពាហ៍ពិពាហ៍១ឆ្នាំ។ សូមទាញទិន្នន័យទៅExcel នៅពេលកម្មវិធីចប់។
+                </p>
+            </footer>
+        </div>
+        
+    </div>
+
+    <!-- Modals -->
+    <!-- Guest Modal -->
+    <div id="guest-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <h3 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2">បញ្ចូល/កែប្រែ ព័ត៌មានភ្ញៀវ</h3>
+            <input type="hidden" id="g-docId">
+            <input type="hidden" id="g-autoId">
+            <div class="grid grid-cols-2 gap-4">
+                <div><label class="block text-sm text-gray-600">ឈ្មោះភ្ញៀវ *</label><input type="text" id="g-name" class="w-full border p-2 rounded focus:ring-1 focus:ring-blue-300 outline-none"></div>
+                <div><label class="block text-sm text-gray-600">ភេទ</label>
+                    <select id="g-gender" class="w-full border p-2 rounded focus:ring-1 focus:ring-blue-300 outline-none"><option value="ប្រុស">ប្រុស</option><option value="ស្រី">ស្រី</option></select>
+                </div>
+                <div><label class="block text-sm text-gray-600">ខាងណា?</label>
+                    <select id="g-side" class="w-full border p-2 rounded focus:ring-1 focus:ring-blue-300 outline-none">
+                        <option value="">-- សូមជ្រើសរើស --</option>
+                        <option value="កូនកំលោះ">កូនកំលោះ</option>
+                        <option value="កូនក្រមុំ">កូនក្រមុំ</option>
+                    </select>
+                </div>
+                <div><label class="block text-sm text-gray-600">ចំនួនភ្ញៀវចូលរួម (នាក់)</label><input type="number" id="g-pax" class="w-full border p-2 rounded focus:ring-1 focus:ring-blue-300 outline-none" placeholder="ឧទាហរណ៍៖ 1"></div>
+                <div><label class="block text-sm text-gray-600">លេខទូរស័ព្ទ ១</label><input type="text" id="g-phone1" class="w-full border p-2 rounded focus:ring-1 focus:ring-blue-300 outline-none"></div>
+                <div><label class="block text-sm text-gray-600">លេខទូរស័ព្ទ ២</label><input type="text" id="g-phone2" class="w-full border p-2 rounded focus:ring-1 focus:ring-blue-300 outline-none"></div>
+                <div class="col-span-2"><label class="block text-sm text-gray-600">អាសយដ្ឋាន</label><input type="text" id="g-address" class="w-full border p-2 rounded focus:ring-1 focus:ring-blue-300 outline-none"></div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3 border-t pt-4">
+                <button onclick="closeModal('guest-modal')" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded text-gray-700 shadow-sm">បោះបង់</button>
+                <button onclick="saveGuest()" class="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded shadow-sm">រក្សាទុក</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Donation Modal -->
+    <div id="donation-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-visible">
+            <h3 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2">កត់ត្រាចំណងដៃ</h3>
+            <input type="hidden" id="d-docId">
+            <input type="hidden" id="d-guestDocId">
+            <div class="grid grid-cols-2 gap-4">
+                 <div class="col-span-2 relative">
+                    <label class="block text-sm text-gray-600 font-bold text-blue-600 mb-1">ស្វែងរក ឬជ្រើសរើសភ្ញៀវ (វាយឈ្មោះ លេខកូដ ឬទូរស័ព្ទ)</label>
+                    <input type="text" id="d-guestSearch" oninput="filterGuestDropdown()" onfocus="showGuestDropdown()" onblur="hideGuestDropdown()" class="w-full border border-blue-400 p-2 rounded focus:ring focus:ring-blue-200 outline-none" placeholder="-- សូមវាយបញ្ចូល ឬជ្រើសរើស --" autocomplete="off">
+                    <div id="guest-custom-dropdown" class="hidden absolute z-50 w-full bg-white border border-gray-300 rounded shadow-xl max-h-48 overflow-y-auto mt-1">
+                        <ul id="guest-dropdown-list"></ul>
+                    </div>
+                </div>
+                <div><label class="block text-sm text-gray-600">កាលបរិច្ឆេទ</label><input type="date" id="d-date" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-blue-300"></div>
+                <div><label class="block text-sm text-gray-600">លេខកូដភ្ញៀវ</label><input type="text" id="d-guestId" readonly class="w-full border p-2 bg-gray-100 rounded outline-none"></div>
+                <div><label class="block text-sm text-gray-600">ឈ្មោះភ្ញៀវ</label><input type="text" id="d-name" readonly class="w-full border p-2 bg-gray-100 rounded outline-none"></div>
+                <div><label class="block text-sm text-gray-600">ភេទ</label><input type="text" id="d-gender" readonly class="w-full border p-2 bg-gray-100 rounded outline-none"></div>
+                <div><label class="block text-sm text-gray-600">ខាងណា?</label><input type="text" id="d-side" readonly class="w-full border p-2 bg-gray-100 rounded outline-none"></div>
+                <div><label class="block text-sm text-gray-600">ចំណងដៃ (រៀល)</label><input type="number" id="d-riel" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-blue-300" placeholder="0"></div>
+                <div><label class="block text-sm text-gray-600">ចំណងដៃ (ដុល្លារ)</label><input type="number" id="d-usd" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-blue-300" placeholder="0"></div>
+                <div class="col-span-2"><label class="block text-sm text-gray-600">ផ្សេងៗ (សម្ភារៈ/អំណោយ)</label><input type="text" id="d-other" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-blue-300"></div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3 border-t pt-4">
+                <button onclick="closeModal('donation-modal')" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded text-gray-700 shadow-sm">បោះបង់</button>
+                <button onclick="saveDonation()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded shadow-sm">រក្សាទុក</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expense Modal -->
+    <div id="expense-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <h3 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2">កត់ត្រាចំណាយ</h3>
+            <input type="hidden" id="e-docId">
+            <div class="grid grid-cols-2 gap-4">
+                <div><label class="block text-sm text-gray-600">កាលបរិច្ឆេទ</label><input type="date" id="e-date" class="w-full border p-2 rounded focus:ring-1 focus:ring-orange-300 outline-none"></div>
+                <div><label class="block text-sm text-gray-600">ឈ្មោះអ្នកផ្គត់ផ្គង់</label><input type="text" id="e-supplier" class="w-full border p-2 rounded focus:ring-1 focus:ring-orange-300 outline-none"></div>
+                <div class="col-span-2"><label class="block text-sm text-gray-600">បរិយាយចំណាយ</label><textarea id="e-desc" class="w-full border p-2 rounded focus:ring-1 focus:ring-orange-300 outline-none" rows="2"></textarea></div>
+                <div><label class="block text-sm text-gray-600">ទឹកប្រាក់ (រៀល)</label><input type="number" id="e-riel" class="w-full border p-2 rounded focus:ring-1 focus:ring-orange-300 outline-none" placeholder="0"></div>
+                <div><label class="block text-sm text-gray-600">ទឹកប្រាក់ (ដុល្លារ)</label><input type="number" id="e-usd" class="w-full border p-2 rounded focus:ring-1 focus:ring-orange-300 outline-none" placeholder="0"></div>
+                <div class="col-span-2"><label class="block text-sm text-gray-600">ផ្សេងៗ</label><input type="text" id="e-other" class="w-full border p-2 rounded focus:ring-1 focus:ring-orange-300 outline-none"></div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3 border-t pt-4">
+                <button onclick="closeModal('expense-modal')" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded text-gray-700 shadow-sm">បោះបង់</button>
+                <button onclick="saveExpense()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded shadow-sm">រក្សាទុក</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
