@@ -497,7 +497,7 @@ async function saveDonation() {
             guestDocId: document.getElementById('d-guestDocId').value || '', name: document.getElementById('d-name').value || '', 
             gender: document.getElementById('d-gender').value || '', side: document.getElementById('d-side').value || '', 
             riel: parseFloat(document.getElementById('d-riel').value) || 0, usd: parseFloat(document.getElementById('d-usd').value) || 0,
-            payMethod: document.getElementById('d-payMethod').value || 'លុយសុទ្ធ', // បន្ថែមប្រភេទទូទាត់
+            payMethod: document.getElementById('d-payMethod').value || 'លុយសុទ្ធ',
             other: document.getElementById('d-other').value || '', updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         if(docId) await db.collection('donations').doc(docId).update(data);
@@ -511,7 +511,8 @@ async function loadDonations() {
         const tbody = document.getElementById('donation-tbody'); tbody.innerHTML = '<tr><td colspan="10" class="text-center p-4">កំពុងទាញទិន្នន័យ...</td></tr>';
         const snapshot = await db.collection('donations').where('weddingId', '==', weddingId).get();
         let donations = [];
-        let totalSummaryRiel = 0, totalSummaryUsd = 0;
+        
+        let cashRiel = 0, cashUsd = 0, bankRiel = 0, bankUsd = 0, mixRiel = 0, mixUsd = 0;
         
         snapshot.forEach(doc => { let d = doc.data(); d.id = doc.id; donations.push(d); });
         
@@ -524,10 +525,18 @@ async function loadDonations() {
         tbody.innerHTML = '';
         let i = 1;
         donations.forEach(d => {
-            totalSummaryRiel += (parseFloat(d.riel) || 0);
-            totalSummaryUsd += (parseFloat(d.usd) || 0);
+            let r = parseFloat(d.riel) || 0;
+            let u = parseFloat(d.usd) || 0;
+            
+            // ការគណនាបំបែកលុយសុទ្ធ និងធនាគារ
+            if (d.payMethod === 'ធនាគារ') {
+                bankRiel += r; bankUsd += u;
+            } else if (d.payMethod === 'លុយសុទ្ធ + ធនាគារ') {
+                mixRiel += r; mixUsd += u;
+            } else {
+                cashRiel += r; cashUsd += u;
+            }
 
-            // បង្ហាញប្រភេទការទូទាត់
             let payMethodUI = `<td class="p-2 border font-bold text-blue-600">${d.payMethod || 'លុយសុទ្ធ'}</td>`;
             let moneyUI = `<td class="p-2 border text-gray-700">${fmtNum(d.riel)}</td><td class="p-2 border text-gray-700">${fmtNum(d.usd)}</td>${payMethodUI}<td class="p-2 border text-purple-700">${d.other || ''}</td>`;
             
@@ -543,9 +552,17 @@ async function loadDonations() {
                 </tr>`;
         });
 
+        // បង្ហាញ UI បំបែកលុយនៅក្បែរចំណងជើង
         let summaryEl = document.getElementById('donation-summary');
         if (summaryEl) {
-            summaryEl.innerText = `(សរុប៖ ${fmtNum(totalSummaryRiel)} ៛ | $${fmtNum(totalSummaryUsd)})`;
+            let htmlStr = `
+                <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full border border-green-200 shadow-sm">💵 សុទ្ធ៖ ${fmtNum(cashRiel)} ៛ | $${fmtNum(cashUsd)}</span>
+                <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full border border-blue-200 shadow-sm">🏦 ធនាគារ៖ ${fmtNum(bankRiel)} ៛ | $${fmtNum(bankUsd)}</span>
+            `;
+            if (mixRiel > 0 || mixUsd > 0) {
+                htmlStr += `<span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full border border-purple-200 shadow-sm">🔄 ចម្រុះ៖ ${fmtNum(mixRiel)} ៛ | $${fmtNum(mixUsd)}</span>`;
+            }
+            summaryEl.innerHTML = htmlStr;
         }
 
     } catch(e) { console.error(e); }
@@ -574,7 +591,7 @@ async function saveExpense() {
             weddingId: weddingId, date: document.getElementById('e-date').value || '', supplier: document.getElementById('e-supplier').value || '', 
             desc: document.getElementById('e-desc').value || '', riel: parseFloat(document.getElementById('e-riel').value) || 0, 
             usd: parseFloat(document.getElementById('e-usd').value) || 0, 
-            payMethod: document.getElementById('e-payMethod').value || 'លុយសុទ្ធ', // បន្ថែមប្រភេទទូទាត់ចំណាយ
+            payMethod: document.getElementById('e-payMethod').value || 'លុយសុទ្ធ',
             other: document.getElementById('e-other').value || '', 
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
@@ -589,7 +606,8 @@ async function loadExpenses() {
         const tbody = document.getElementById('expense-tbody'); tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4">កំពុងទាញទិន្នន័យ...</td></tr>';
         const snapshot = await db.collection('expenses').where('weddingId', '==', weddingId).get();
         let expenses = [];
-        let totalSummaryRiel = 0, totalSummaryUsd = 0;
+        
+        let cashRiel = 0, cashUsd = 0, bankRiel = 0, bankUsd = 0, mixRiel = 0, mixUsd = 0;
         
         snapshot.forEach(doc => { let d = doc.data(); d.id = doc.id; expenses.push(d); });
         
@@ -602,8 +620,17 @@ async function loadExpenses() {
         tbody.innerHTML = '';
         let i = 1;
         expenses.forEach(d => {
-            totalSummaryRiel += (parseFloat(d.riel) || 0);
-            totalSummaryUsd += (parseFloat(d.usd) || 0);
+            let r = parseFloat(d.riel) || 0;
+            let u = parseFloat(d.usd) || 0;
+            
+            // ការគណនាបំបែកលុយសុទ្ធ និងធនាគារ
+            if (d.payMethod === 'ធនាគារ') {
+                bankRiel += r; bankUsd += u;
+            } else if (d.payMethod === 'លុយសុទ្ធ + ធនាគារ') {
+                mixRiel += r; mixUsd += u;
+            } else {
+                cashRiel += r; cashUsd += u;
+            }
 
             tbody.innerHTML += `
                 <tr class="hover:bg-gray-50 border-b">
@@ -618,9 +645,17 @@ async function loadExpenses() {
                 </tr>`;
         });
 
+        // បង្ហាញ UI បំបែកលុយនៅក្បែរចំណងជើង
         let summaryEl = document.getElementById('expense-summary');
         if (summaryEl) {
-            summaryEl.innerText = `(សរុប៖ ${fmtNum(totalSummaryRiel)} ៛ | $${fmtNum(totalSummaryUsd)})`;
+            let htmlStr = `
+                <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full border border-green-200 shadow-sm">💵 សុទ្ធ៖ ${fmtNum(cashRiel)} ៛ | $${fmtNum(cashUsd)}</span>
+                <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full border border-blue-200 shadow-sm">🏦 ធនាគារ៖ ${fmtNum(bankRiel)} ៛ | $${fmtNum(bankUsd)}</span>
+            `;
+            if (mixRiel > 0 || mixUsd > 0) {
+                htmlStr += `<span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full border border-purple-200 shadow-sm">🔄 ចម្រុះ៖ ${fmtNum(mixRiel)} ៛ | $${fmtNum(mixUsd)}</span>`;
+            }
+            summaryEl.innerHTML = htmlStr;
         }
         
     } catch(e) { console.error(e); }
@@ -738,7 +773,6 @@ async function exportReportToExcel() {
         let headerName = document.getElementById('report-header-names').innerText;
         let fileName = `${reportNameMap[type]}.xlsx`;
 
-        // Update Income Export
         if(type === 'all' || type === 'income') {
             const snap = await db.collection('donations').where('weddingId', '==', weddingId).get();
             let arr = []; snap.forEach(doc => arr.push(doc.data()));
@@ -753,7 +787,6 @@ async function exportReportToExcel() {
             XLSX.utils.book_append_sheet(wb, ws, "ចំណូល");
         }
 
-        // Update Expense Export
         if(type === 'all' || type === 'expense') {
             const snap = await db.collection('expenses').where('weddingId', '==', weddingId).get();
             let arr = []; snap.forEach(doc => arr.push(doc.data()));

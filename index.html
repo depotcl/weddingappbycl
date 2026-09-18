@@ -127,9 +127,13 @@
 
                 <!-- Page: Donations List -->
                 <div id="page-donations" class="page-content hidden">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-2xl moul-font text-rose-600">បញ្ជីចំណងដៃ <span id="donation-summary" class="text-lg font-bold text-green-600 font-sans ml-2 tracking-wider bg-green-50 px-3 py-1 rounded-full border border-green-200"></span></h2>
-                        <div class="flex gap-2">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+                        <div>
+                            <h2 class="text-2xl moul-font text-rose-600">បញ្ជីចំណងដៃ</h2>
+                            <!-- កន្លែងបង្ហាញរបាយការណ៍បំបែក -->
+                            <div id="donation-summary" class="flex flex-wrap gap-2 mt-3 text-sm font-sans"></div>
+                        </div>
+                        <div class="flex gap-2 shrink-0">
                             <input type="text" onkeyup="searchTable('donation-tbody', this.value)" placeholder="ស្វែងរក..." class="border p-2 rounded shadow-sm focus:ring-1 focus:ring-rose-300">
                             <button onclick="openModal('donation-modal')" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded shadow-sm">+ កត់ចំណងដៃ</button>
                         </div>
@@ -151,9 +155,13 @@
 
                 <!-- Page: Expenses List -->
                 <div id="page-expenses" class="page-content hidden">
-                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-2xl moul-font text-rose-600">បញ្ជីចំណាយ <span id="expense-summary" class="text-lg font-bold text-orange-600 font-sans ml-2 tracking-wider bg-orange-50 px-3 py-1 rounded-full border border-orange-200"></span></h2>
-                        <div class="flex gap-2">
+                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+                        <div>
+                            <h2 class="text-2xl moul-font text-rose-600">បញ្ជីចំណាយ</h2>
+                            <!-- កន្លែងបង្ហាញរបាយការណ៍បំបែក -->
+                            <div id="expense-summary" class="flex flex-wrap gap-2 mt-3 text-sm font-sans"></div>
+                        </div>
+                        <div class="flex gap-2 shrink-0">
                             <input type="text" onkeyup="searchTable('expense-tbody', this.value)" placeholder="ស្វែងរក..." class="border p-2 rounded shadow-sm focus:ring-1 focus:ring-rose-300">
                             <button onclick="openModal('expense-modal')" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded shadow-sm">+ កត់ចំណាយ</button>
                         </div>
@@ -302,12 +310,11 @@
 
             </main>
 
-            <!-- Footer Section សម្រាប់ថ្លែងអំណរគុណ និងសារចំណាំ -->
+            <!-- Footer Section -->
             <footer class="bg-white border-t border-rose-100 p-4 text-center no-print z-10 shadow-[0_-2px_15px_rgba(0,0,0,0.03)] shrink-0">
                 <p class="text-sm md:text-base moul-font text-rose-500 tracking-wide drop-shadow-[0_1px_1px_rgba(0,0,0,0.05)]">
                     🙏 សូមអរគុណដែលបានជ្រើសរើស <a href="https://www.facebook.com/CHHEANGLENGDEPOT" target="_blank" class="text-rose-700 px-1 font-bold hover:text-rose-800 hover:underline transition-colors duration-300">ដេប៉ូភេសជ្ជៈ ឈាង ឡេង</a> សម្រាប់ពិធីអាពាហ៍ពិពាហ៍របស់លោកអ្នក។ ✨
                 </p>
-                <!-- សារចំណាំ -->
                 <p class="text-xs text-gray-600 mt-2 font-sans max-w-2xl mx-auto leading-relaxed">
                     <span class="text-red-500 font-bold">ចំណាំ៖</span> ទិន្នន័យទាំងអស់នឹងត្រូវលុបចេញពីប្រព័ន្ធដោយស្វ័យប្រវត្តិក្រោយកាលបរិច្ឆេទរៀបអាពាហ៍ពិពាហ៍១ឆ្នាំ។ សូមទាញទិន្នន័យទៅExcel នៅពេលកម្មវិធីចប់។
                 </p>
