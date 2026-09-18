@@ -165,10 +165,14 @@ function closeModal(id) {
         document.getElementById('g-side').value = '';
     }
     if(id === 'donation-modal') {
-        document.querySelectorAll('#donation-modal input').forEach(el => el.value = '');
+        document.querySelectorAll('#donation-modal input[type="text"], #donation-modal input[type="number"], #donation-modal input[type="hidden"]').forEach(el => el.value = '');
+        document.getElementById('d-payMethod').value = 'លុយសុទ្ធ';
         document.getElementById('guest-custom-dropdown').classList.add('hidden');
     }
-    if(id === 'expense-modal') document.querySelectorAll('#expense-modal input, #expense-modal textarea').forEach(el => el.value = '');
+    if(id === 'expense-modal') {
+        document.querySelectorAll('#expense-modal input, #expense-modal textarea').forEach(el => el.value = '');
+        document.getElementById('e-payMethod').value = 'លុយសុទ្ធ';
+    }
 }
 function searchTable(tbodyId, query) {
     const rows = document.querySelectorAll(`#${tbodyId} tr`);
@@ -493,6 +497,7 @@ async function saveDonation() {
             guestDocId: document.getElementById('d-guestDocId').value || '', name: document.getElementById('d-name').value || '', 
             gender: document.getElementById('d-gender').value || '', side: document.getElementById('d-side').value || '', 
             riel: parseFloat(document.getElementById('d-riel').value) || 0, usd: parseFloat(document.getElementById('d-usd').value) || 0,
+            payMethod: document.getElementById('d-payMethod').value || 'លុយសុទ្ធ', // បន្ថែមប្រភេទទូទាត់
             other: document.getElementById('d-other').value || '', updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         if(docId) await db.collection('donations').doc(docId).update(data);
@@ -503,10 +508,10 @@ async function saveDonation() {
 
 async function loadDonations() {
     try {
-        const tbody = document.getElementById('donation-tbody'); tbody.innerHTML = '<tr><td colspan="9" class="text-center p-4">កំពុងទាញទិន្នន័យ...</td></tr>';
+        const tbody = document.getElementById('donation-tbody'); tbody.innerHTML = '<tr><td colspan="10" class="text-center p-4">កំពុងទាញទិន្នន័យ...</td></tr>';
         const snapshot = await db.collection('donations').where('weddingId', '==', weddingId).get();
         let donations = [];
-        let totalSummaryRiel = 0, totalSummaryUsd = 0; // បង្កើតអថេរសម្រាប់បូកសរុបប្រាក់
+        let totalSummaryRiel = 0, totalSummaryUsd = 0;
         
         snapshot.forEach(doc => { let d = doc.data(); d.id = doc.id; donations.push(d); });
         
@@ -519,11 +524,12 @@ async function loadDonations() {
         tbody.innerHTML = '';
         let i = 1;
         donations.forEach(d => {
-            // បូកសរុបទឹកប្រាក់
             totalSummaryRiel += (parseFloat(d.riel) || 0);
             totalSummaryUsd += (parseFloat(d.usd) || 0);
 
-            let moneyUI = `<td class="p-2 border text-gray-700">${fmtNum(d.riel)}</td><td class="p-2 border text-gray-700">${fmtNum(d.usd)}</td><td class="p-2 border text-purple-700">${d.other || ''}</td>`;
+            // បង្ហាញប្រភេទការទូទាត់
+            let payMethodUI = `<td class="p-2 border font-bold text-blue-600">${d.payMethod || 'លុយសុទ្ធ'}</td>`;
+            let moneyUI = `<td class="p-2 border text-gray-700">${fmtNum(d.riel)}</td><td class="p-2 border text-gray-700">${fmtNum(d.usd)}</td>${payMethodUI}<td class="p-2 border text-purple-700">${d.other || ''}</td>`;
             
             tbody.innerHTML += `
                 <tr class="hover:bg-gray-50 border-b">
@@ -537,7 +543,6 @@ async function loadDonations() {
                 </tr>`;
         });
 
-        // បង្ហាញសរុបទឹកប្រាក់នៅក្បែរចំណងជើង
         let summaryEl = document.getElementById('donation-summary');
         if (summaryEl) {
             summaryEl.innerText = `(សរុប៖ ${fmtNum(totalSummaryRiel)} ៛ | $${fmtNum(totalSummaryUsd)})`;
@@ -556,6 +561,7 @@ async function editDonation(id) {
     }
     document.getElementById('d-riel').value = d.riel || ''; 
     document.getElementById('d-usd').value = d.usd || '';
+    document.getElementById('d-payMethod').value = d.payMethod || 'លុយសុទ្ធ';
     document.getElementById('d-other').value = d.other || '';
     openModal('donation-modal');
 }
@@ -567,7 +573,9 @@ async function saveExpense() {
         const data = {
             weddingId: weddingId, date: document.getElementById('e-date').value || '', supplier: document.getElementById('e-supplier').value || '', 
             desc: document.getElementById('e-desc').value || '', riel: parseFloat(document.getElementById('e-riel').value) || 0, 
-            usd: parseFloat(document.getElementById('e-usd').value) || 0, other: document.getElementById('e-other').value || '', 
+            usd: parseFloat(document.getElementById('e-usd').value) || 0, 
+            payMethod: document.getElementById('e-payMethod').value || 'លុយសុទ្ធ', // បន្ថែមប្រភេទទូទាត់ចំណាយ
+            other: document.getElementById('e-other').value || '', 
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         if(docId) await db.collection('expenses').doc(docId).update(data);
@@ -578,10 +586,10 @@ async function saveExpense() {
 
 async function loadExpenses() {
     try {
-        const tbody = document.getElementById('expense-tbody'); tbody.innerHTML = '';
+        const tbody = document.getElementById('expense-tbody'); tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4">កំពុងទាញទិន្នន័យ...</td></tr>';
         const snapshot = await db.collection('expenses').where('weddingId', '==', weddingId).get();
         let expenses = [];
-        let totalSummaryRiel = 0, totalSummaryUsd = 0; // បង្កើតអថេរសម្រាប់បូកសរុបចំណាយ
+        let totalSummaryRiel = 0, totalSummaryUsd = 0;
         
         snapshot.forEach(doc => { let d = doc.data(); d.id = doc.id; expenses.push(d); });
         
@@ -591,9 +599,9 @@ async function loadExpenses() {
             return timeB - timeA;
         });
         
+        tbody.innerHTML = '';
         let i = 1;
         expenses.forEach(d => {
-            // បូកសរុបទឹកប្រាក់
             totalSummaryRiel += (parseFloat(d.riel) || 0);
             totalSummaryUsd += (parseFloat(d.usd) || 0);
 
@@ -602,6 +610,7 @@ async function loadExpenses() {
                     <td class="p-2 border">${i++}</td><td class="p-2 border"><a href="#" onclick="showPage('expenses', document.getElementById('menu-expenses')); editExpense('${d.id}')" class="text-blue-500 hover:underline">${d.date}</a></td>
                     <td class="p-2 border">${d.supplier}</td><td class="p-2 border">${d.desc}</td>
                     <td class="p-2 border">${fmtNum(d.riel)}</td><td class="p-2 border">${fmtNum(d.usd)}</td>
+                    <td class="p-2 border font-bold text-orange-600">${d.payMethod || 'លុយសុទ្ធ'}</td>
                     <td class="p-2 border text-center flex justify-center gap-2">
                         <button onclick="editExpense('${d.id}')" class="text-blue-500 hover:underline">កែ</button>
                         ${currentRole === 'admin' ? `<button onclick="deleteDoc('expenses', '${d.id}')" class="text-red-500 hover:underline">លុប</button>` : ''}
@@ -609,7 +618,6 @@ async function loadExpenses() {
                 </tr>`;
         });
 
-        // បង្ហាញសរុបទឹកប្រាក់នៅក្បែរចំណងជើង
         let summaryEl = document.getElementById('expense-summary');
         if (summaryEl) {
             summaryEl.innerText = `(សរុប៖ ${fmtNum(totalSummaryRiel)} ៛ | $${fmtNum(totalSummaryUsd)})`;
@@ -623,6 +631,7 @@ async function editExpense(id) {
     document.getElementById('e-docId').value = id; document.getElementById('e-date').value = d.date || '';
     document.getElementById('e-supplier').value = d.supplier || ''; document.getElementById('e-desc').value = d.desc || '';
     document.getElementById('e-riel').value = d.riel || ''; document.getElementById('e-usd').value = d.usd || '';
+    document.getElementById('e-payMethod').value = d.payMethod || 'លុយសុទ្ធ';
     document.getElementById('e-other').value = d.other || '';
     openModal('expense-modal');
 }
@@ -676,7 +685,9 @@ async function loadReports() {
             inBody.innerHTML += `<tr>
                 <td class="p-2 border">${d.date}</td><td class="p-2 border">${d.guestId}</td>
                 <td class="p-2 border">${d.name}</td><td class="p-2 border">${fmtNum(d.riel)}</td>
-                <td class="p-2 border">${fmtNum(d.usd)}</td><td class="p-2 border text-purple-700 font-bold">${d.other || ''}</td>
+                <td class="p-2 border">${fmtNum(d.usd)}</td>
+                <td class="p-2 border text-blue-600 font-bold">${d.payMethod || 'លុយសុទ្ធ'}</td>
+                <td class="p-2 border text-purple-700 font-bold">${d.other || ''}</td>
             </tr>`;
         });
         document.getElementById('rpt-total-in-riel').innerText = fmtNum(totalInRiel) + " ៛";
@@ -691,7 +702,7 @@ async function loadReports() {
         const exBody = document.getElementById('rpt-expense-tbody'); exBody.innerHTML = '';
         expenses.forEach(d => {
             totalExRiel += (parseFloat(d.riel) || 0); totalExUsd += (parseFloat(d.usd) || 0);
-            exBody.innerHTML += `<tr><td class="p-2 border">${d.date}</td><td class="p-2 border">${d.supplier}</td><td class="p-2 border">${d.desc}</td><td class="p-2 border">${fmtNum(d.riel)}</td><td class="p-2 border">${fmtNum(d.usd)}</td></tr>`;
+            exBody.innerHTML += `<tr><td class="p-2 border">${d.date}</td><td class="p-2 border">${d.supplier}</td><td class="p-2 border">${d.desc}</td><td class="p-2 border">${fmtNum(d.riel)}</td><td class="p-2 border">${fmtNum(d.usd)}</td><td class="p-2 border text-orange-600">${d.payMethod || 'លុយសុទ្ធ'}</td></tr>`;
         });
         document.getElementById('rpt-total-ex-riel').innerText = fmtNum(totalExRiel) + " ៛";
         document.getElementById('rpt-total-ex-usd').innerText = "$ " + fmtNum(totalExUsd);
@@ -727,6 +738,7 @@ async function exportReportToExcel() {
         let headerName = document.getElementById('report-header-names').innerText;
         let fileName = `${reportNameMap[type]}.xlsx`;
 
+        // Update Income Export
         if(type === 'all' || type === 'income') {
             const snap = await db.collection('donations').where('weddingId', '==', weddingId).get();
             let arr = []; snap.forEach(doc => arr.push(doc.data()));
@@ -734,20 +746,21 @@ async function exportReportToExcel() {
             
             let ws_data = [
                 [`របាយការណ៍ចំណូល - ${headerName}`], 
-                ["កាលបរិច្ឆេទ", "លេខកូដ", "ឈ្មោះភ្ញៀវ", "ទឹកប្រាក់ (៛)", "ទឹកប្រាក់ ($)", "ផ្សេងៗ (សម្ភារៈ)"]
+                ["កាលបរិច្ឆេទ", "លេខកូដ", "ឈ្មោះភ្ញៀវ", "ទឹកប្រាក់ (៛)", "ទឹកប្រាក់ ($)", "ប្រភេទការទូទាត់", "ផ្សេងៗ (សម្ភារៈ)"]
             ];
-            arr.forEach(d => { ws_data.push([ d.date || '', d.guestId || '', d.name || '', parseFloat(d.riel) || 0, parseFloat(d.usd) || 0, d.other || '' ]); });
+            arr.forEach(d => { ws_data.push([ d.date || '', d.guestId || '', d.name || '', parseFloat(d.riel) || 0, parseFloat(d.usd) || 0, d.payMethod || 'លុយសុទ្ធ', d.other || '' ]); });
             let ws = XLSX.utils.aoa_to_sheet(ws_data);
             XLSX.utils.book_append_sheet(wb, ws, "ចំណូល");
         }
 
+        // Update Expense Export
         if(type === 'all' || type === 'expense') {
             const snap = await db.collection('expenses').where('weddingId', '==', weddingId).get();
             let arr = []; snap.forEach(doc => arr.push(doc.data()));
             arr.sort((a, b) => (b.updatedAt?.toMillis() || 0) - (a.updatedAt?.toMillis() || 0));
             
-            let ws_data = [ [`របាយការណ៍ចំណាយ - ${headerName}`], ["កាលបរិច្ឆេទ", "អ្នកផ្គត់ផ្គង់", "បរិយាយ", "ទឹកប្រាក់ (៛)", "ទឹកប្រាក់ ($)", "ផ្សេងៗ"] ];
-            arr.forEach(d => { ws_data.push([ d.date || '', d.supplier || '', d.desc || '', parseFloat(d.riel) || 0, parseFloat(d.usd) || 0, d.other || '' ]); });
+            let ws_data = [ [`របាយការណ៍ចំណាយ - ${headerName}`], ["កាលបរិច្ឆេទ", "អ្នកផ្គត់ផ្គង់", "បរិយាយ", "ទឹកប្រាក់ (៛)", "ទឹកប្រាក់ ($)", "ប្រភេទការទូទាត់", "ផ្សេងៗ"] ];
+            arr.forEach(d => { ws_data.push([ d.date || '', d.supplier || '', d.desc || '', parseFloat(d.riel) || 0, parseFloat(d.usd) || 0, d.payMethod || 'លុយសុទ្ធ', d.other || '' ]); });
             let ws = XLSX.utils.aoa_to_sheet(ws_data);
             XLSX.utils.book_append_sheet(wb, ws, "ចំណាយ");
         }

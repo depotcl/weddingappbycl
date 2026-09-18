@@ -140,8 +140,8 @@
                                 <tr>
                                     <th class="p-2 border">ល.រ</th><th class="p-2 border">កាលបរិច្ឆេទ</th><th class="p-2 border">លេខកូដ</th>
                                     <th class="p-2 border">ឈ្មោះភ្ញៀវ</th><th class="p-2 border">ខាងណា?</th><th class="p-2 border">ចំណងដៃ(៛)</th>
-                                    <th class="p-2 border">ចំណងដៃ($)</th><th class="p-2 border">ផ្សេងៗ</th>
-                                    <th class="p-2 border text-center">សកម្មភាព</th>
+                                    <th class="p-2 border">ចំណងដៃ($)</th><th class="p-2 border text-blue-600">ប្រភេទការទូទាត់</th>
+                                    <th class="p-2 border">ផ្សេងៗ</th><th class="p-2 border text-center">សកម្មភាព</th>
                                 </tr>
                             </thead>
                             <tbody id="donation-tbody"></tbody>
@@ -164,7 +164,7 @@
                                 <tr>
                                     <th class="p-2 border">ល.រ</th><th class="p-2 border">កាលបរិច្ឆេទ</th><th class="p-2 border">អ្នកផ្គត់ផ្គង់</th>
                                     <th class="p-2 border">បរិយាយ</th><th class="p-2 border">ចំណាយ(៛)</th><th class="p-2 border">ចំណាយ($)</th>
-                                    <th class="p-2 border text-center">សកម្មភាព</th>
+                                    <th class="p-2 border text-orange-600">ប្រភេទការទូទាត់</th><th class="p-2 border">សកម្មភាព</th>
                                 </tr>
                             </thead>
                             <tbody id="expense-tbody"></tbody>
@@ -231,6 +231,7 @@
                                         <th class="p-2 border">កាលបរិច្ឆេទ</th><th class="p-2 border">លេខកូដ</th>
                                         <th class="p-2 border">ឈ្មោះភ្ញៀវ</th><th class="p-2 border">ទឹកប្រាក់ (៛)</th>
                                         <th class="p-2 border">ទឹកប្រាក់ ($)</th>
+                                        <th class="p-2 border text-blue-600">ប្រភេទទូទាត់</th>
                                         <th class="p-2 border text-purple-700">ផ្សេងៗ (សម្ភារៈ)</th>
                                     </tr>
                                 </thead>
@@ -243,7 +244,7 @@
                                 <h2 class="text-2xl font-bold moul-font">របាយការណ៍ចំណាយ</h2>
                             </div>
                             <table class="w-full text-left text-sm border" id="table-report-expense">
-                                <thead class="bg-gray-100"><tr><th class="p-2 border">កាលបរិច្ឆេទ</th><th class="p-2 border">អ្នកផ្គត់ផ្គង់</th><th class="p-2 border">បរិយាយ</th><th class="p-2 border">ទឹកប្រាក់ (៛)</th><th class="p-2 border">ទឹកប្រាក់ ($)</th></tr></thead>
+                                <thead class="bg-gray-100"><tr><th class="p-2 border">កាលបរិច្ឆេទ</th><th class="p-2 border">អ្នកផ្គត់ផ្គង់</th><th class="p-2 border">បរិយាយ</th><th class="p-2 border">ទឹកប្រាក់ (៛)</th><th class="p-2 border">ទឹកប្រាក់ ($)</th><th class="p-2 border text-orange-600">ប្រភេទទូទាត់</th></tr></thead>
                                 <tbody id="rpt-expense-tbody"></tbody>
                             </table>
                         </div>
@@ -362,11 +363,22 @@
                 </div>
                 <div><label class="block text-sm text-gray-600">កាលបរិច្ឆេទ</label><input type="date" id="d-date" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-blue-300"></div>
                 <div><label class="block text-sm text-gray-600">លេខកូដភ្ញៀវ</label><input type="text" id="d-guestId" readonly class="w-full border p-2 bg-gray-100 rounded outline-none"></div>
+                
                 <div><label class="block text-sm text-gray-600">ឈ្មោះភ្ញៀវ</label><input type="text" id="d-name" readonly class="w-full border p-2 bg-gray-100 rounded outline-none"></div>
                 <div><label class="block text-sm text-gray-600">ភេទ</label><input type="text" id="d-gender" readonly class="w-full border p-2 bg-gray-100 rounded outline-none"></div>
+                
                 <div><label class="block text-sm text-gray-600">ខាងណា?</label><input type="text" id="d-side" readonly class="w-full border p-2 bg-gray-100 rounded outline-none"></div>
+                <div><label class="block text-sm text-gray-600">ប្រភេទការទូទាត់</label>
+                    <select id="d-payMethod" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-blue-300">
+                        <option value="លុយសុទ្ធ">💵 លុយសុទ្ធ</option>
+                        <option value="ធនាគារ">🏦 ធនាគារ (Transfer)</option>
+                        <option value="លុយសុទ្ធ + ធនាគារ">💵+🏦 លុយសុទ្ធ + ធនាគារ</option>
+                    </select>
+                </div>
+                
                 <div><label class="block text-sm text-gray-600">ចំណងដៃ (រៀល)</label><input type="number" id="d-riel" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-blue-300" placeholder="0"></div>
                 <div><label class="block text-sm text-gray-600">ចំណងដៃ (ដុល្លារ)</label><input type="number" id="d-usd" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-blue-300" placeholder="0"></div>
+                
                 <div class="col-span-2"><label class="block text-sm text-gray-600">ផ្សេងៗ (សម្ភារៈ/អំណោយ)</label><input type="text" id="d-other" class="w-full border p-2 rounded outline-none focus:ring-1 focus:ring-blue-300"></div>
             </div>
             <div class="mt-6 flex justify-end gap-3 border-t pt-4">
@@ -387,7 +399,15 @@
                 <div class="col-span-2"><label class="block text-sm text-gray-600">បរិយាយចំណាយ</label><textarea id="e-desc" class="w-full border p-2 rounded focus:ring-1 focus:ring-orange-300 outline-none" rows="2"></textarea></div>
                 <div><label class="block text-sm text-gray-600">ទឹកប្រាក់ (រៀល)</label><input type="number" id="e-riel" class="w-full border p-2 rounded focus:ring-1 focus:ring-orange-300 outline-none" placeholder="0"></div>
                 <div><label class="block text-sm text-gray-600">ទឹកប្រាក់ (ដុល្លារ)</label><input type="number" id="e-usd" class="w-full border p-2 rounded focus:ring-1 focus:ring-orange-300 outline-none" placeholder="0"></div>
-                <div class="col-span-2"><label class="block text-sm text-gray-600">ផ្សេងៗ</label><input type="text" id="e-other" class="w-full border p-2 rounded focus:ring-1 focus:ring-orange-300 outline-none"></div>
+                
+                <div><label class="block text-sm text-gray-600">ប្រភេទការទូទាត់</label>
+                    <select id="e-payMethod" class="w-full border p-2 rounded focus:ring-1 focus:ring-orange-300 outline-none">
+                        <option value="លុយសុទ្ធ">💵 លុយសុទ្ធ</option>
+                        <option value="ធនាគារ">🏦 ធនាគារ (Transfer)</option>
+                        <option value="លុយសុទ្ធ + ធនាគារ">💵+🏦 លុយសុទ្ធ + ធនាគារ</option>
+                    </select>
+                </div>
+                <div><label class="block text-sm text-gray-600">ផ្សេងៗ</label><input type="text" id="e-other" class="w-full border p-2 rounded focus:ring-1 focus:ring-orange-300 outline-none"></div>
             </div>
             <div class="mt-6 flex justify-end gap-3 border-t pt-4">
                 <button onclick="closeModal('expense-modal')" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded text-gray-700 shadow-sm">បោះបង់</button>
