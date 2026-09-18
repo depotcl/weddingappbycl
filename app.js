@@ -506,6 +506,8 @@ async function loadDonations() {
         const tbody = document.getElementById('donation-tbody'); tbody.innerHTML = '<tr><td colspan="9" class="text-center p-4">កំពុងទាញទិន្នន័យ...</td></tr>';
         const snapshot = await db.collection('donations').where('weddingId', '==', weddingId).get();
         let donations = [];
+        let totalSummaryRiel = 0, totalSummaryUsd = 0; // បង្កើតអថេរសម្រាប់បូកសរុបប្រាក់
+        
         snapshot.forEach(doc => { let d = doc.data(); d.id = doc.id; donations.push(d); });
         
         donations.sort((a, b) => {
@@ -517,6 +519,10 @@ async function loadDonations() {
         tbody.innerHTML = '';
         let i = 1;
         donations.forEach(d => {
+            // បូកសរុបទឹកប្រាក់
+            totalSummaryRiel += (parseFloat(d.riel) || 0);
+            totalSummaryUsd += (parseFloat(d.usd) || 0);
+
             let moneyUI = `<td class="p-2 border text-gray-700">${fmtNum(d.riel)}</td><td class="p-2 border text-gray-700">${fmtNum(d.usd)}</td><td class="p-2 border text-purple-700">${d.other || ''}</td>`;
             
             tbody.innerHTML += `
@@ -530,8 +536,16 @@ async function loadDonations() {
                     </td>
                 </tr>`;
         });
+
+        // បង្ហាញសរុបទឹកប្រាក់នៅក្បែរចំណងជើង
+        let summaryEl = document.getElementById('donation-summary');
+        if (summaryEl) {
+            summaryEl.innerText = `(សរុប៖ ${fmtNum(totalSummaryRiel)} ៛ | $${fmtNum(totalSummaryUsd)})`;
+        }
+
     } catch(e) { console.error(e); }
 }
+
 async function editDonation(id) {
     const doc = await db.collection('donations').doc(id).get(); const d = doc.data();
     document.getElementById('d-docId').value = id; document.getElementById('d-date').value = d.date || '';
@@ -561,11 +575,14 @@ async function saveExpense() {
         closeModal('expense-modal'); loadExpenses();
     } catch (error) { alert("បរាជ័យ៖ " + error.message); }
 }
+
 async function loadExpenses() {
     try {
         const tbody = document.getElementById('expense-tbody'); tbody.innerHTML = '';
         const snapshot = await db.collection('expenses').where('weddingId', '==', weddingId).get();
         let expenses = [];
+        let totalSummaryRiel = 0, totalSummaryUsd = 0; // បង្កើតអថេរសម្រាប់បូកសរុបចំណាយ
+        
         snapshot.forEach(doc => { let d = doc.data(); d.id = doc.id; expenses.push(d); });
         
         expenses.sort((a, b) => {
@@ -576,6 +593,10 @@ async function loadExpenses() {
         
         let i = 1;
         expenses.forEach(d => {
+            // បូកសរុបទឹកប្រាក់
+            totalSummaryRiel += (parseFloat(d.riel) || 0);
+            totalSummaryUsd += (parseFloat(d.usd) || 0);
+
             tbody.innerHTML += `
                 <tr class="hover:bg-gray-50 border-b">
                     <td class="p-2 border">${i++}</td><td class="p-2 border"><a href="#" onclick="showPage('expenses', document.getElementById('menu-expenses')); editExpense('${d.id}')" class="text-blue-500 hover:underline">${d.date}</a></td>
@@ -587,8 +608,16 @@ async function loadExpenses() {
                     </td>
                 </tr>`;
         });
+
+        // បង្ហាញសរុបទឹកប្រាក់នៅក្បែរចំណងជើង
+        let summaryEl = document.getElementById('expense-summary');
+        if (summaryEl) {
+            summaryEl.innerText = `(សរុប៖ ${fmtNum(totalSummaryRiel)} ៛ | $${fmtNum(totalSummaryUsd)})`;
+        }
+        
     } catch(e) { console.error(e); }
 }
+
 async function editExpense(id) {
     const doc = await db.collection('expenses').doc(id).get(); const d = doc.data();
     document.getElementById('e-docId').value = id; document.getElementById('e-date').value = d.date || '';
@@ -597,6 +626,7 @@ async function editExpense(id) {
     document.getElementById('e-other').value = d.other || '';
     openModal('expense-modal');
 }
+
 async function deleteDoc(collection, id) {
     if(confirm("តើអ្នកពិតជាចង់លុបទិន្នន័យនេះមែនទេ?")) {
         await db.collection(collection).doc(id).delete();
